@@ -1,7 +1,9 @@
 # CombatVisualManager.gd
 extends Node2D
 
-const CardVisual = preload("res://scripts/CardVisual.gd")
+const CardScript = preload("res://scripts/Card.gd")
+
+const CardVisualScript = preload("res://scripts/CardVisual.gd")
 const CARD_SPACING = 150
 const PLAYER_Y = 400
 const OPPONENT_Y = 200
@@ -12,6 +14,9 @@ const CombatZoneManager = preload("res://scripts/CombatZoneManager.gd")
 var combat_manager: CombatManager
 var card_visuals: Dictionary = {}
 var zone_manager: CombatZoneManager
+var in_combat: bool = false
+var player_zone: CardContainer
+var opponent_zone: CardContainer
 
 func _ready():
 	combat_manager = CombatManager.new()
@@ -19,50 +24,71 @@ func _ready():
 	# Setup zones
 	zone_manager = CombatZoneManager.new()
 	add_child(zone_manager)
+	zone_manager.position = Vector2(START_X, 0)
 	zone_manager.setup_zones(START_X, PLAYER_Y, OPPONENT_Y)
 	
 	# Add a button to start combat
 	var combat_button = Button.new()
 	combat_button.text = "Execute Combat Round"
-	combat_button.position = Vector2(400, 300)
+	combat_button.position = Vector2(900, 900)
 	combat_button.pressed.connect(execute_combat_round)
 	add_child(combat_button)
 	
-	setup_test_battle()
+	setup_combat_zones()
 
-func setup_test_battle():
-	# Create some test cards
-	var knight = CombatCard.new("Knight", 3, 4, 3)
-	var goblin = CombatCard.new("Goblin", 2, 2, 1)
-	var dragon = CombatCard.new("Dragon", 5, 5, 5)
+func setup_combat_zones():
+	# Create player zone
+	player_zone = CardContainer.new()
+	player_zone.container_name = "PlayerCombatZone"
+	player_zone.position = Vector2(200, 400)
+	player_zone.custom_minimum_size = Vector2(800, 200)
+	add_child(player_zone)
 	
-	# Place cards on the board using the new helper method
-	place_and_visualize_card(knight, 0, true)   # Player's knight
-	place_and_visualize_card(goblin, 1, false)  # Opponent's goblin
-	place_and_visualize_card(dragon, 2, false)  # Opponent's dragon
+	# Create opponent zone
+	opponent_zone = CardContainer.new()
+	opponent_zone.container_name = "OpponentCombatZone"
+	opponent_zone.position = Vector2(200, 200)
+	opponent_zone.custom_minimum_size = Vector2(800, 200)
+	opponent_zone.accepts_drops = false
+	add_child(opponent_zone)
 
-func place_and_visualize_card(card: CombatCard, position: int, is_player: bool):
-	# Place card in combat manager
-	combat_manager.place_card(card, position, is_player)
-	# Create matching visual representation
-	create_card_visual(card, position, is_player)
+func _on_card_drag_started(_card: CardVisual):
+	if in_combat:
+		return
+	zone_manager.highlight_valid_zones(true)
 
-func create_card_visual(card: CombatCard, card_position: int, is_player: bool):
-	var card_visual = CardVisual.new()
-	add_child(card_visual)
-	card_visual.setup_card(card, is_player)
+func _on_card_drag_ended(card: CardVisual, drop_position: Vector2):
+	if in_combat:
+		return
+		
+	zone_manager.highlight_valid_zones(false)
+	zone_manager.clear_drop_preview()
 	
-	# Get the appropriate slot position
-	var slots = zone_manager.player_slots if is_player else zone_manager.opponent_slots
-	if card_position < slots.size():
-		var slot = slots[card_position]
-		# Center the card in the slot
-		card_visual.position = slot.position
+	var slot_idx = zone_manager.get_slot_at_position(drop_position)
+	if slot_idx != -1:
+		handle_card_drop(card, slot_idx)
+
+func handle_card_drop(card: CardVisual, new_slot: int):
+	var old_slot = combat_manager.get_card_position(card.card_data)
 	
-	# Store reference to card visual
-	card_visuals[card] = card_visual
+	# Check if there's a card in the target slot
+	var existing_card = combat_manager.get_card_at_position(new_slot, true)
+	
+	if existing_card:
+		# Swap cards
+		var existing_visual = card_visuals[existing_card]
+		combat_manager.swap_cards(old_slot, new_slot)
+		
+		# Animate both cards
+		card.move_to_position(zone_manager.player_slots[new_slot].position)
+		existing_visual.move_to_position(zone_manager.player_slots[old_slot].position)
+	else:
+		# Simply move the card
+		combat_manager.move_card(old_slot, new_slot)
+		card.move_to_position(zone_manager.player_slots[new_slot].position)
 
 func execute_combat_round():
+	in_combat = true
 	# Execute combat in the combat manager
 	combat_manager.execute_combat_round()
 	
@@ -78,4 +104,24 @@ func execute_combat_round():
 		else:
 			# Update the card's display
 			card_visuals[card].update_display()
+	in_combat = false
+
+func setup_test_cards():
+	var hand_container = CardContainer.new()
+	hand_container.container_name = "TestHand"
+	hand_container.position = Vector2(150, 200)
+	add_child(hand_container)
+	
+	# Create some sample cards with different stats
+	var test_cards = [
+		["Knight", 3, 4, 3],
+		["Dragon", 5, 5, 5],
+		["Goblin", 2, 2, 1]
+	]
+	
+	for card_data in test_cards:
+		var card = CardScript.new(card_data[0], card_data[1], card_data[2], card_data[3])
+		var card_visual = CardVisualScript.new()
+		card_visual.setup_card(card)
+		hand_container.add_card(card_visual)
 

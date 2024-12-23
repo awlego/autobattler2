@@ -9,6 +9,9 @@ const SLOT_COLOR = Color(1, 1, 1, 0.2)
 
 var player_slots: Array[Node2D] = []
 var opponent_slots: Array[Node2D] = []
+var highlight_color = Color(0.2, 1.0, 0.2, 0.3)
+var slot_sprites: Array = []
+var current_highlight: ColorRect = null
 
 func setup_zones(start_x: float, player_y: float, opponent_y: float):
 	# Create zones container
@@ -25,6 +28,12 @@ func setup_zones(start_x: float, player_y: float, opponent_y: float):
 	
 	# Create card slots
 	create_card_slots(start_x, player_y, opponent_y)
+	
+	# Create visual representations for slots
+	for slot in player_slots:
+		var sprite = create_slot_sprite(slot)
+		slot_sprites.append(sprite)
+		sprite.modulate.a = 0  # Initially invisible
 
 func create_zone(y_position: float, start_x: float) -> Node2D:
 	var zone = Node2D.new()
@@ -89,3 +98,43 @@ func create_slot(number: int) -> Node2D:
 	
 	slot.queue_redraw()
 	return slot 
+
+func create_slot_sprite(slot: Node2D) -> ColorRect:
+	var sprite = ColorRect.new()
+	sprite.size = SLOT_SIZE
+	sprite.position = Vector2(slot.position.x - SLOT_SIZE.x/2, slot.position.y)  # Align with slot position
+	sprite.color = highlight_color
+	sprite.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(sprite)
+	return sprite
+
+func highlight_valid_zones(highlight: bool):
+	for sprite in slot_sprites:
+		var tween = create_tween()
+		tween.tween_property(sprite, "modulate:a", 0.5 if highlight else 0.0, 0.2)
+
+func get_slot_at_position(pos: Vector2) -> int:
+	for i in range(player_slots.size()):
+		var slot = player_slots[i]
+		var slot_rect = Rect2(slot.position, SLOT_SIZE)
+		if slot_rect.has_point(pos):
+			return i
+	return -1
+
+func show_drop_preview(pos: Vector2):
+	var slot_idx = get_slot_at_position(pos)
+	if slot_idx != -1:
+		if not current_highlight:
+			current_highlight = ColorRect.new()
+			current_highlight.color = Color(1, 1, 1, 0.3)
+			current_highlight.size = Vector2(100, 150)
+			add_child(current_highlight)
+		
+		current_highlight.position = player_slots[slot_idx].position
+		current_highlight.visible = true
+	elif current_highlight:
+		current_highlight.visible = false
+
+func clear_drop_preview():
+	if current_highlight:
+		current_highlight.visible = false

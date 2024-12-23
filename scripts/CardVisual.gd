@@ -1,5 +1,6 @@
 # CardVisual.gd
-extends Node2D
+extends Control
+class_name CardVisual 
 
 var card_data: CombatCard
 var is_player_card: bool = true
@@ -16,11 +17,43 @@ const CARD_WIDTH = 120
 const CARD_HEIGHT = 160
 const MARGIN = 10
 
+var draggable: bool = false
+var ghost_node: Node2D = null
+
+signal drag_started(card: CardVisual)
+signal drag_ended(card: CardVisual)
+
 func _ready():
-	construct_card_visual()
-	setup_animations()
+	custom_minimum_size = Vector2(CARD_WIDTH, CARD_HEIGHT)
+	size = custom_minimum_size
+	mouse_filter = Control.MOUSE_FILTER_STOP
+	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	
+	# Only construct if it hasn't been constructed yet
+	if not has_node("CardBackground"):
+		construct_card_visual()
+		setup_animations()
 
 func construct_card_visual():
+	# Add a Control node to handle input
+	var control = Control.new()
+	control.set_anchors_preset(Control.PRESET_FULL_RECT)
+	control.mouse_filter = Control.MOUSE_FILTER_STOP
+	control.gui_input.connect(_on_gui_input)
+	control.custom_minimum_size = Vector2(CARD_WIDTH, CARD_HEIGHT)
+	control.size = Vector2(CARD_WIDTH, CARD_HEIGHT)
+	control.position = Vector2.ZERO
+	
+	# Make the control node clickable
+	control.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	
+	# Debug prints
+	print("Creating control node for: ", name)
+	print("Control node size: ", control.size)
+	print("Control mouse filter: ", control.mouse_filter)
+	
+	add_child(control)
+	
 	# Create background
 	card_bg = ColorRect.new()
 	card_bg.size = Vector2(CARD_WIDTH, CARD_HEIGHT)
@@ -148,6 +181,14 @@ func setup_animations():
 func setup_card(new_card: CombatCard, is_player: bool = true):
 	card_data = new_card
 	is_player_card = is_player
+	
+	# If the node isn't ready yet, defer the update
+	if not is_inside_tree():
+		# Call construct_card_visual immediately instead of waiting for _ready
+		construct_card_visual()
+		setup_animations()
+	
+	print("Setting up card: ", new_card.card_name, " draggable: ", draggable)
 	update_display()
 
 func update_display():
@@ -172,39 +213,32 @@ func _to_string() -> String:
 func set_draggable(can_drag: bool):
 	draggable = can_drag
 
-func _on_gui_input(event: InputEvent):
+func get_drag_data(_position: Vector2):
 	if not draggable:
-		return
+		return null
 	
-	if event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_LEFT:
-			if event.pressed:
-				start_drag()
-			else:
-				end_drag()
-	elif event is InputEventMouseMotion and being_dragged:
-		position = get_global_mouse_position() - start_drag_position
-
-func start_drag():
-	being_dragged = true
-	original_position = position
-	start_drag_position = get_local_mouse_position()
-	z_index = 1  # Ensure dragged card appears above others
-	create_ghost()
-	# Emit signal for zone highlighting
+	# Create preview
+	var preview = Control.new()
+	var preview_card = duplicate()
+	preview_card.modulate.a = 0.7
+	preview.add_child(preview_card)
+	
+	# Create ghost card in original position
+	# create_ghost()
+	
+	set_drag_preview(preview)
 	emit_signal("drag_started", self)
+	return self
 
-func end_drag():
-	being_dragged = false
-	z_index = 0
-	remove_ghost()
-	# Emit signal for zone handling
-	emit_signal("drag_ended", self, position)
+func _notification(what: int) -> void:
+	match what:
+		NOTIFICATION_DRAG_END:
+			remove_ghost()
+			emit_signal("drag_ended", self, position)
 
 func create_ghost():
 	ghost_node = duplicate()
 	ghost_node.modulate.a = 0.5
-	ghost_node.position = original_position
 	get_parent().add_child(ghost_node)
 
 func remove_ghost():
@@ -212,11 +246,25 @@ func remove_ghost():
 		ghost_node.queue_free()
 		ghost_node = null
 
-func move_to_position(new_position: Vector2, animate: bool = true):
-	if animate:
-		var tween = create_tween()
-		tween.tween_property(self, "position", new_position, 0.3)\
-			.set_trans(Tween.TRANS_CUBIC)\
-			.set_ease(Tween.EASE_OUT)
-	else:
-		position = new_position
+func move_to_position_with_scale(new_position: Vector2, new_scale: Vector2, duration: float = 0.3):
+	var tween = create_tween()
+	tween.set_parallel(true)  # Allows multiple properties to animate simultaneously
+	tween.tween_property(self, "position", new_position, duration)\
+		.set_trans(Tween.TRANS_CUBIC)\
+		.set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "scale", new_scale, duration)\
+		.set_trans(Tween.TRANS_CUBIC)\
+		.set_ease(Tween.EASE_OUT)
+
+func scale_card(new_scale: float, duration: float = 0.3):
+	var tween = create_tween()
+	tween.tween_property(self, "scale", Vector2(new_scale, new_scale), duration)\
+		.set_trans(Tween.TRANS_CUBIC)\
+		.set_ease(Tween.EASE_OUT)
+
+func _on_gui_input(event: InputEvent):
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			if event.pressed:
+				print("Card clicked: ", card_data.card_name if card_data else "No card data")
+				# You can add more click handling logic here

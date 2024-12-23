@@ -1,20 +1,27 @@
 # Main.gd
 extends Node2D
 
-const CombatVisualManager = preload("res://scripts/CombatVisualManager.gd")
+const CardScript = preload("res://scripts/Card.gd")
+const CardVisualScript = preload("res://scripts/CardVisual.gd")
+
+var game_ui: CanvasLayer
 
 func _ready():
-	# Create the combat visual manager
-	var combat_visual = CombatVisualManager.new()
-	add_child(combat_visual)
+	game_ui = preload("res://scripts/GameUI.gd").new()
+	add_child(game_ui)
+	setup_test_game()
+
+func setup_test_game():
+	# Create some test cards
+	var test_cards = [
+		["Knight", 3, 4, 3],
+		["Dragon", 5, 5, 5],
+		["Goblin", 2, 2, 1]
+	]
 	
-	# The combat manager is automatically created inside CombatVisualManager
-	# in its _ready() function, so we don't need to create it here
-	
-	# The setup_test_battle() function in CombatVisualManager will handle:
-	# 1. Creating the cards
-	# 2. Placing them in the combat manager
-	# 3. Creating their visuals
-	
-	# The combat button is also automatically created in CombatVisualManager's
-	# _ready() function, which will trigger combat when clicked
+	for card_data in test_cards:
+		var card = CardScript.new(card_data[0], card_data[1], card_data[2], card_data[3])
+		var card_visual = CardVisualScript.new()
+		card_visual.setup_card(card)
+		card_visual.set_draggable(true)
+		game_ui.player_hand.add_card(card_visual)

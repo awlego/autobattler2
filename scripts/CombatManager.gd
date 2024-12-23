@@ -1,4 +1,3 @@
-
 # CombatManager.gd
 extends Node
 
@@ -88,3 +87,29 @@ func example_combat():
     
     # Execute a combat round
     combat.execute_combat_round()
+
+func get_card_position(card: CombatCard) -> int:
+    for i in range(player_board.size()):
+        if player_board[i] == card:
+            return i
+    return -1
+
+func get_card_at_position(position: int, is_player: bool = true) -> CombatCard:
+    var board = player_board if is_player else opponent_board
+    return board[position] if position >= 0 and position < board.size() else null
+
+func swap_cards(pos1: int, pos2: int):
+    var temp = player_board[pos1]
+    player_board[pos1] = player_board[pos2]
+    player_board[pos2] = temp
+    
+    if player_board[pos1]:
+        player_board[pos1].position_in_combat = pos1
+    if player_board[pos2]:
+        player_board[pos2].position_in_combat = pos2
+
+func move_card(from_pos: int, to_pos: int):
+    player_board[to_pos] = player_board[from_pos]
+    player_board[from_pos] = null
+    if player_board[to_pos]:
+        player_board[to_pos].position_in_combat = to_pos
