@@ -20,8 +20,12 @@ func setup_visuals():
 	background.color = Color(0.2, 0.2, 0.2, 0.3)
 	background.anchor_right = 1.0
 	background.anchor_bottom = 1.0
-	background.mouse_filter = Control.MOUSE_FILTER_PASS  # Don't block input
+	background.mouse_filter = Control.MOUSE_FILTER_IGNORE  # Make sure background doesn't catch clicks
+	background.z_index = -1  # Put background behind everything
 	add_child(background)
+	
+	# Move background to back
+	move_child(background, 0)
 
 func setup_slots():
 	# Create margin container for padding
