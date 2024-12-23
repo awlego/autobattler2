@@ -1,0 +1,57 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/view/ZoneView.gd" id="1_script"]
+
+[node name="ZoneView" type="Control"]
+custom_minimum_size = Vector2(800, 150)
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_script")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.2, 0.2, 0.2, 0.3)
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_right = 10
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="CardSlot1" type="Panel" parent="MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(120, 160)
+layout_mode = 2
+script = ExtResource("res://scripts/view/CardSlotView.gd")
+
+[node name="CardSlot2" type="Panel" parent="MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(120, 160)
+layout_mode = 2
+script = ExtResource("res://scripts/view/CardSlotView.gd")
+
+[node name="CardSlot3" type="Panel" parent="MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(120, 160)
+layout_mode = 2
+script = ExtResource("res://scripts/view/CardSlotView.gd")
+
+[node name="CardSlot4" type="Panel" parent="MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(120, 160)
+layout_mode = 2
+script = ExtResource("res://scripts/view/CardSlotView.gd")
+
+[node name="CardSlot5" type="Panel" parent="MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(120, 160)
+layout_mode = 2
+script = ExtResource("res://scripts/view/CardSlotView.gd") 
