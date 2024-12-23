@@ -205,6 +205,8 @@ func end_drag():
 	
 	# Get all slots from the game
 	var slots = get_tree().get_nodes_in_group("card_slots")
+	print("Found", slots.size(), "potential slots")
+	
 	for slot in slots:
 		var distance = global_position.distance_to(slot.global_position)
 		if distance < min_distance:
@@ -213,37 +215,32 @@ func end_drag():
 	
 	# If we found a valid slot within range, move to it
 	if closest_slot and min_distance < 100:  # Adjust threshold as needed
-		if closest_slot.can_accept_card(self):
-			print("Moving card to new slot:", closest_slot.name)
-			var current_parent = get_parent()
-			if current_parent:
-				current_parent.remove_child(self)
-			closest_slot.add_card(self)
-	else:
-		# Always return to original parent if no valid slot found
-		print("No valid slot found, returning to original slot")
-		if is_instance_valid(original_parent):
-			var current_parent = get_parent()
-			if current_parent:
-				current_parent.remove_child(self)
-			original_parent.add_child(self)
-			position = Vector2.ZERO  # Reset position within slot
+		print("Found closest slot:", closest_slot.name, "at distance:", min_distance)
+		print("Slot has card:", closest_slot.current_card != null)
+		
+		# Always attempt the swap
+		print("Attempting swap with slot:", closest_slot.name)
+		var displaced_card = closest_slot.add_card_with_swap(self)
+		
+		# If we displaced a card, move it to our original slot
+		if displaced_card:
+			print("Moving displaced card", displaced_card.name, "to original slot")
+			original_parent.add_card(displaced_card)
 		else:
-			# If original parent is somehow invalid, find any available slot
-			print("Original parent invalid, finding any available slot")
-			for slot in slots:
-				if slot.can_accept_card(self):
-					var current_parent = get_parent()
-					if current_parent:
-						current_parent.remove_child(self)
-					slot.add_card(self)
-					print("Found emergency slot for card")
-					break
-			
-			# If we still haven't found a slot, something is very wrong
-			if not is_instance_valid(get_parent()):
-				push_error("Could not find any valid slot for card!")
-				queue_free()  # Last resort: remove the card
+			print("No card was displaced during swap")
+		
+		drag_ended.emit(self)
+		return
+	
+	# If no valid slot found, return to original slot
+	print("No valid slot found, returning to original slot")
+	if is_instance_valid(original_parent):
+		var current_parent = get_parent()
+		if current_parent:
+			current_parent.remove_child(self)
+		original_parent.add_card(self)
+	else:
+		push_error("Original parent no longer valid")
 	
 	drag_ended.emit(self)
 

@@ -29,7 +29,9 @@ func update_debug_label():
 		debug_label.text = "[Slot %d] Card: %s" % [slot_index, card_name]
 
 func can_accept_card(card: CardView) -> bool:
-	return not has_card()  # Can accept if we don't already have a card
+	print("Checking if slot", slot_index, "can accept card. Has card:", current_card != null)
+	# Always accept if card is being dragged (allows swaps)
+	return true
 
 func _on_mouse_entered():
 	if not has_card() and get_tree().get_nodes_in_group("dragging_cards").size() > 0:
@@ -80,3 +82,30 @@ func clear_card_reference():
 	print("Clearing card reference from slot", slot_index)
 	current_card = null
 	update_debug_label()
+
+func add_card_with_swap(incoming_card: CardView) -> CardView:
+	print("Attempting swap in slot", slot_index, 
+		  "\n - Current card:", current_card.name if current_card else "none",
+		  "\n - Incoming card:", incoming_card.name)
+	
+	var displaced_card = current_card  # Store current card before swap
+	
+	# Remove incoming card from its current parent
+	var incoming_parent = incoming_card.get_parent()
+	if incoming_parent:
+		incoming_parent.remove_child(incoming_card)
+	
+	# If we have a card to swap
+	if displaced_card:
+		print("Swapping cards:", incoming_card.name, "with", displaced_card.name)
+		remove_child(displaced_card)
+		clear_card_reference()  # Clear our reference to the displaced card
+	
+	# Add the incoming card
+	current_card = incoming_card
+	add_child(incoming_card)
+	incoming_card.position = Vector2.ZERO
+	update_debug_label()
+	
+	print("Swap complete. Returning displaced card:", displaced_card.name if displaced_card else "none")
+	return displaced_card  # Return the displaced card (or null if no swap)
