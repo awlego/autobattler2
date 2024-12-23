@@ -51,12 +51,47 @@ func start_game():
 	phase_changed.emit("main")
 
 func start_combat():
-	if game_state.current_phase != "main":
-		return
+	print("Starting combat phase...")
+	
+	# Get cards in the battle zones
+	var player_cards = game_state.player_board
+	var opponent_cards = game_state.opponent_board
+	
+	print("Player cards:", player_cards.size(), "Opponent cards:", opponent_cards.size())
+	
+	# Process combat for each position
+	for i in range(max(player_cards.size(), opponent_cards.size())):
+		var player_card = player_cards[i] if i < player_cards.size() else null
+		var opponent_card = opponent_cards[i] if i < opponent_cards.size() else null
 		
-	game_state.current_phase = "combat"
-	phase_changed.emit("combat")
-	combat_controller.execute_combat_round()
+		if player_card and opponent_card:
+			print("Processing combat at position", i)
+			print("Player card:", player_card.card_name, "vs Opponent card:", opponent_card.card_name)
+			
+			# Apply damage
+			opponent_card.health -= player_card.attack
+			player_card.health -= opponent_card.attack
+			
+			print("After combat - Player card health:", player_card.health, 
+				  "Opponent card health:", opponent_card.health)
+	
+	# Remove dead cards
+	remove_dead_cards(player_cards)
+	remove_dead_cards(opponent_cards)
+	
+	# Update the view
+	emit_signal("game_state_changed")
+
+func remove_dead_cards(cards: Array):
+	var cards_to_remove = []
+	for card in cards:
+		if card.health <= 0:
+			print("Card died:", card.card_name)
+			cards_to_remove.append(card)
+	
+	# Remove cards after iteration
+	for card in cards_to_remove:
+		game_state.remove_card(card)
 
 # View signal handlers
 func _on_card_drag_started(card: Card, from_zone: String):
