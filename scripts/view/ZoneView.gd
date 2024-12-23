@@ -70,3 +70,6 @@ func get_cards() -> Array[CardView]:
 		if slot.has_card():
 			cards.append(slot.get_card())
 	return cards
+
+func get_slots() -> Array[CardSlotView]:
+	return slots

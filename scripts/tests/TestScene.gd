@@ -1,67 +1,93 @@
 extends Node2D
 
-var game_state: GameState
-var game_view: GameView
-var game_controller: GameController
+# Declare class variables at the top
+@onready var game_state: GameState
+@onready var game_view: GameView
+@onready var game_controller: GameController
 
 func _ready():
+	print("\nStarting TestScene initialization...")
 	setup_test_environment()
 	add_test_controls()
 
 func setup_test_environment():
-	print("Starting test environment setup...")
+	print("\nStarting test environment setup...")
 	
-	# Create game state first
+	# Step 1: Create game state
 	game_state = GameState.new()
-	print("GameState created:", game_state)
+	print("Step 1 - GameState created:", game_state)
 	
-	# Create and add view to scene tree
+	# Step 2: Create and add view to scene tree
 	var scene_path = "res://scenes/GameView.tscn"
-	print("Attempting to load GameView scene from:", scene_path)
+	print("Step 2 - Loading GameView from:", scene_path)
 	
 	var scene = load(scene_path)
 	if scene:
-		print("GameView scene loaded successfully")
 		game_view = scene.instantiate()
 		add_child(game_view)
-		print("GameView instantiated and added to tree:", game_view)
+		print("Step 2a - GameView added to tree:", game_view)
 		
-		# Wait for view to be ready
-		await game_view.ready
-		print("GameView ready signal received")
-		
+		# Instead of awaiting, check if it's ready
 		if !game_view.player_hand or !game_view.player_board:
-			push_error("GameView zones not properly initialized!")
-			return
+			push_error("Step 2 failed: GameView zones not properly initialized!")
+			return false
 			
-		print("GameView zones verified")
+		print("Step 2 complete - GameView zones verified")
 	else:
-		push_error("Failed to load GameView scene from path: " + scene_path)
-		return
+		push_error("Step 2 failed: Could not load GameView scene!")
+		return false
 	
-	print("Creating GameController...")
-	game_controller = GameController.new(game_state, game_view)
-	print("GameController created:", game_controller)
+	# Step 3: Create and setup GameController
+	print("Step 3 - Creating GameController...")
+	game_controller = GameController.new()
+	if not game_controller:
+		push_error("Step 3 failed: Could not create GameController!")
+		return false
+		
+	print("Step 3a - Setting up GameController...")
+	game_controller.setup(game_state, game_view)
+	if not game_controller.game_state or not game_controller.game_view:
+		push_error("Step 3 failed: GameController setup incomplete!")
+		return false
+		
+	print("Step 3b - Adding GameController to scene tree...")
+	add_child(game_controller)
+	print("Step 3c - GameController added:", game_controller)
 	
-	# Add test cards
+	# Verify controller is properly stored
+	if not is_instance_valid(game_controller):
+		push_error("Step 3 failed: GameController became invalid!")
+		return false
+	
+	# Step 4: Add test cards
+	print("Step 4 - Adding test cards...")
 	add_test_cards()
+	
 	print("Test environment setup complete!")
+	return true
 
 func add_test_cards():
-	print("Adding test cards...")
-	var test_cards = [
-		["Knight", 3, 4, 3],
-		["Dragon", 5, 5, 5],
-		["Goblin", 2, 2, 1]
-	]
+	print("\nAdding test cards...")
 	
-	for card_data in test_cards:
-		var card = Card.new(card_data[0], card_data[1], card_data[2], card_data[3])
-		game_state.player_state.add_card_to_hand(card)
+	# Create test cards
+	var knight = Card.new("Knight", 3, 4, 3)
+	var dragon = Card.new("Dragon", 5, 5, 3)
+	var goblin = Card.new("Goblin", 2, 2, 1)
+	var orc = Card.new("Orc", 4, 3, 2)
+	var troll = Card.new("Troll", 3, 6, 4)
 	
-	print("Updating game view...")
+	# Add cards to game state
+	game_state.player_state.board.append(knight)
+	game_state.player_state.board.append(dragon)
+	game_state.player_state.board.append(goblin)
+	
+	game_state.opponent_state.board.append(orc)
+	game_state.opponent_state.board.append(troll)
+	
+	# Update view to reflect state
 	game_view.update_display(game_state)
-	print("Test cards added and displayed")
+	
+	print("Test cards added to game state and view updated")
 
 # Visual test helpers
 func add_test_controls():
@@ -119,7 +145,23 @@ func test_drag_and_drop():
 				print("No card in slot")
 
 func test_combat():
-	print("Testing combat functionality...")
+	print("\nDEBUG: Starting combat test")
+	print("DEBUG: game_controller =", game_controller)
+	print("DEBUG: All nodes in scene:")
+	for child in get_children():
+		print(" - ", child.name, " (", child.get_class(), ")")
+	
+	if not game_controller:
+		push_error("GameController is null! Cannot test combat.")
+		return
+	if not game_controller.game_state:
+		push_error("GameController state is null! Cannot test combat.")
+		return
+	if not game_controller.game_view:
+		push_error("GameController view is null! Cannot test combat.")
+		return
+		
+	print("Starting combat with controller:", game_controller)
 	game_controller.start_combat()
 
 func reset_state():
