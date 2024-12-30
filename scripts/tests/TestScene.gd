@@ -166,9 +166,17 @@ func test_combat():
 
 func reset_state():
 	print("Resetting game state...")
-	game_state = GameState.new()
-	add_test_cards()
-	game_view.update_display(game_state)
+	
+	# Remove existing controller and view
+	if game_controller:
+		game_controller.queue_free()
+	if game_view:
+		game_view.queue_free()
+		
+	# Setup fresh environment
+	setup_test_environment()
+	add_test_controls()  # Re-add the test controls
+	print("Game state reset complete")
 
 # Automated tests
 func run_automated_tests():
