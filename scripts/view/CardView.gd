@@ -36,7 +36,7 @@ func _ready():
 	
 	# Ensure cards are always on top
 	z_index = 1
-	z_as_relative = false  # Make z_index global
+	z_as_relative = false
 	
 	# Make card clickable
 	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
@@ -49,7 +49,7 @@ func _ready():
 	# Add debug label
 	debug_label = Label.new()
 	debug_label.add_theme_color_override("font_color", Color.YELLOW)
-	debug_label.position = Vector2(0, -20)  # Above card
+	debug_label.position = Vector2(0, -20)
 	add_child(debug_label)
 	
 	construct_visual()
@@ -79,17 +79,16 @@ func _on_gui_input(event: InputEvent):
 func construct_visual():
 	# Background
 	var background = ColorRect.new()
-	background.color = Color(0.3, 0.3, 0.3, 1.0)
 	background.size = size
-	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	background.color = Color(0.3, 0.3, 0.3, 1.0)
 	add_child(background)
 	
 	# Art placeholder
 	var art_placeholder = ColorRect.new()
+	var art_margin = 10
+	art_placeholder.size = Vector2(size.x - 2 * art_margin, size.y * 0.4)
+	art_placeholder.position = Vector2(art_margin, art_margin)
 	art_placeholder.color = Color(randf(), randf(), randf(), 1.0)
-	art_placeholder.size = Vector2(size.x - 20, size.y * 0.6)
-	art_placeholder.position = Vector2(10, 10)
-	art_placeholder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(art_placeholder)
 	
 	# Name label in center
@@ -271,3 +270,12 @@ func update_debug_label():
 	if debug_label:
 		var parent_name = get_parent().name if get_parent() else "NO PARENT"
 		debug_label.text = "[%s] Parent: %s" % [name, parent_name]
+
+func set_card_art(texture_path: String):
+	var texture = load(texture_path)
+	if texture:
+		# Find the art placeholder
+		for child in get_children():
+			if child is Polygon2D and child != get_node_or_null("background"):
+				child.texture = texture
+				break

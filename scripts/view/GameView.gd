@@ -4,9 +4,9 @@ extends CanvasLayer
 signal card_drag_started(card: Card, from_zone: String)
 signal card_dropped(card: Card, to_zone: String, position: int)
 
-var player_hand: ZoneView
-var player_board: ZoneView
-var opponent_board: ZoneView
+var player_hand: HexZoneView
+var player_board: HexZoneView
+var opponent_board: HexZoneView
 var card_controller: CardController
 
 const ZONE_WIDTH = 800
@@ -30,30 +30,30 @@ func setup_zones():
 	margin.add_theme_constant_override("margin_right", 200)
 	margin.add_theme_constant_override("margin_top", 50)
 	margin.add_theme_constant_override("margin_bottom", 50)
-	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE  # Changed to IGNORE
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(margin)
 	
 	# Create a VBoxContainer to hold all zones with proper spacing
 	var layout = VBoxContainer.new()
 	layout.add_theme_constant_override("separation", ZONE_SPACING)
-	layout.mouse_filter = Control.MOUSE_FILTER_IGNORE  # Changed to IGNORE
+	layout.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	margin.add_child(layout)
 	
 	# Setup opponent board (top)
-	opponent_board = ZoneView.new()
+	opponent_board = HexZoneView.new()
 	opponent_board.zone_name = "opponent_board"
 	opponent_board.accepts_drops = false
-	opponent_board.custom_minimum_size = Vector2(ZONE_WIDTH, ZONE_HEIGHT)
+	opponent_board.custom_minimum_size = Vector2(ZONE_WIDTH, ZONE_HEIGHT * 1.5)
 	layout.add_child(opponent_board)
 	
 	# Setup player board (middle)
-	player_board = ZoneView.new()
+	player_board = HexZoneView.new()
 	player_board.zone_name = "player_board"
-	player_board.custom_minimum_size = Vector2(ZONE_WIDTH, ZONE_HEIGHT)
+	player_board.custom_minimum_size = Vector2(ZONE_WIDTH, ZONE_HEIGHT * 1.5)
 	layout.add_child(player_board)
 	
-	# Setup player hand (bottom)
-	player_hand = ZoneView.new()
+	# Setup player hand (bottom) - now also using HexZoneView
+	player_hand = HexZoneView.new()
 	player_hand.zone_name = "player_hand"
 	player_hand.custom_minimum_size = Vector2(ZONE_WIDTH, ZONE_HEIGHT)
 	layout.add_child(player_hand)

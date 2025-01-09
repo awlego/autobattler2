@@ -7,10 +7,10 @@ var cost: int
 var effects: Array[CardEffect] = []  # We'll create CardEffect class later
 
 func _init(name: String, atk: int, hp: int, card_cost: int):
-    card_name = name
-    attack = atk
-    health = hp
-    cost = card_cost
+	card_name = name
+	attack = atk
+	health = hp
+	cost = card_cost
 
 func take_damage(amount: int) -> bool:
 	health -= amount

@@ -1,4 +1,5 @@
 @tool
+class_name HexMap
 extends Node
 
 # var state = null : set = _set_state, get = _get_state
